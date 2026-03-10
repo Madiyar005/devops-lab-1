@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # ------------------------------
+  # Java қолданбасы
+  # ------------------------------
+  app:
+    build: .
+    container_name: java-app
+    ports:
+      - "5000:5000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+    # Java образында curl жоқ, сондықтан healthcheck bash арқылы
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/5000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ------------------------------
+  # Redis (кэш және счетчик)
+  # ------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+# ------------------------------
+# Желілер
+# ------------------------------
+networks:
+  app-network:
+    driver: bridge
+
+# ------------------------------
+# Томдар (деректерді сақтау)
+# ------------------------------
+volumes:
+  redis-data:

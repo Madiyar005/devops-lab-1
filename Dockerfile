@@ -1,13 +1,38 @@
-FROM python:3.9-slim 
+# ------------------------------
+# 1-кезең: Құрастыру (builder)
+# ------------------------------
+FROM maven:3.9-eclipse-temurin-17 AS builder
 
-WORKDIR /app 
+# Жұмыс папкасы
+WORKDIR build/
 
-COPY requirements.txt . 
+# БҮКІЛ app папкасын көшіру (pom.xml бар)
+COPY app/ .
 
-RUN pip install --no-cache-dir -r requirements.txt 
+# Dependency-лерді жүктеу (кэшке сақталады)
+# Бұл тек pom.xml өзгермесе қайта жүктелмейді
+RUN mvn dependency:go-offline
 
-COPY src/ . 
+# Қолданбаны құрастыру
+RUN mvn clean package -DskipTests
 
-EXPOSE 5000 
+# Құрастырылған jar файлын табу
+RUN ls -la target/ && echo "Jar файлын тексеру"
 
-CMD ["python", "app.py"] 
+# ------------------------------
+# 2-кезең: Іске қосу (runtime)
+# ------------------------------
+FROM eclipse-temurin:17-jre-jammy
+
+# Жұмыс папкасы
+WORKDIR /app
+
+# 1-кезеңнен құрастырылған jar файлын көшіру
+# Кеңейтілген жол: кез келген jar файлын көшіру
+COPY --from=builder /build/target/*.jar app.jar
+
+# Қолданба жұмыс істейтін порт
+EXPOSE 5000
+
+# Қолданбаны іске қосу
+CMD ["java", "-jar", "app.jar"]
