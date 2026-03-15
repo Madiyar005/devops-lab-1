@@ -29,7 +29,8 @@ WORKDIR /app
 
 # 1-кезеңнен құрастырылған jar файлын көшіру
 # Кеңейтілген жол: кез келген jar файлын көшіру
-COPY --from=builder /build/target/*.jar app.jar
+#COPY --from=builder /build/target/*.jar app.jar
+COPY --from=builder /build/target/*-jar-with-dependencies.jar app.jar
 
 # Қолданба жұмыс істейтін порт
 EXPOSE 5000
